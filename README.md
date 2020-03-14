@@ -7,7 +7,7 @@ A set of propagator objects which propagate Bohmian particles along with corresp
 
 ### Install dependencies
 
-- LAPACK
+- LAPACK (should have liblapack.so, instead of static library: liblapack.a)
 - matrix
 
 ### Set envrionment variables
