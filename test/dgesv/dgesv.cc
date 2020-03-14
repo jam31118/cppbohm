@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
-#include "lapack.hh"
+
+#include "../../include/lapack.hh"
 
 int main() {
 
@@ -20,7 +21,7 @@ int main() {
 	if (handle_gesv_info(info) != EXIT_SUCCESS) 
 	{ fprintf(stderr, "[ERROR] Failed to solve linear system.\n"); }
 
-	std::cout << "result:\n";
+	std::cout << "Result:\n";
 	for (int irow = 0; irow < 2; irow++) 
 	{ std::cout << B1d[irow] << std::endl; }
 	
