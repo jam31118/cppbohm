@@ -11,3 +11,7 @@ GSL_LIB_PATH = $(GSLHOME)/lib
 GSL_LIB_FLAGS = -L$(GSL_LIB_PATH) -lgsl -lgslcblas -lm -Wl,-rpath,$(GSL_LIB_PATH)
 GSL_INC_FLAGS = -I$(GSLHOME)/include
 
+TDSE_INC_FLAGS = -I$(TDSEHOME)/include
+TDSE_LIB_PATH = $(TDSEHOME)/lib
+TDSE_LIB_FLAGS = -Wl,-rpath,$(TDSE_LIB_PATH) -L$(TDSE_LIB_PATH) -ltdse
+
