@@ -1,12 +1,14 @@
 from os.path import join
-#BOHMHOME = "/home/ahn/Dropbox/tdse/bohm/cpp/bohm"
-
 from os import getenv
+
 BOHMHOME = getenv("BOHMHOME")
 BOHMINC = join(BOHMHOME, "include")
 
 GSLHOME = getenv("GSLHOME")
 GSLINC = join(GSLHOME, "include")
+
+TDSEHOME = getenv("TDSEHOME")
+TDSEINC = join(TDSEHOME, "include")
 
 def Settings( **kwargs ):
   return {
@@ -14,6 +16,7 @@ def Settings( **kwargs ):
         '-x', 'c++', '-Wall', '-Wextra', '-Werror', 
         '-I', BOHMINC,
         '-I', GSLINC,
+        '-I', TDSEINC
         ],
   }
 
