@@ -1,4 +1,4 @@
-#include "lapack.hh"
+#include "../include/lapack.hh"
 
 int handle_gesv_info(int info) {
 		if (info != 0) {
