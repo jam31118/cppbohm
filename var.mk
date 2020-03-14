@@ -5,6 +5,7 @@
 OPT_FLAGS = -O3
 WARN_FLAGS = -Wall
 
+LAPACK_LIB_RPATH_FLAGS = -Wl,-rpath,$(LAPACKHOME)
 LAPACK_LIB_FLAGS = -L$(LAPACKHOME) -llapack -lrefblas -lgfortran
 
 GSL_LIB_PATH = $(GSLHOME)/lib
