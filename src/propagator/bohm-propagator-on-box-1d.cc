@@ -7,12 +7,73 @@
 
 Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D(): Propagator_on_Box_1D() {}
 
+
 Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D(
 		size_t Nx, double dx, double *Vx, double hbar, double mass):
 	Propagator_on_Box_1D(Nx, dx, Vx, hbar, mass) {	
+
+	s = gsl_multiroot_fsolver_alloc(gsl_multiroot_fsolver_hybrids, Ndim);
 }
 
-Bohm_Propagator_on_Box_1D::~Bohm_Propagator_on_Box_1D() {}
+
+Bohm_Propagator_on_Box_1D::~Bohm_Propagator_on_Box_1D() {
+	gsl_multiroot_fsolver_free(s);
+}
+
+
+int Bohm_Propagator_on_Box_1D::propagate(
+		std::complex<double> *wf_tot, double dt, 
+		double *qarr, size_t Nq, double xmin) 
+{
+
+	const size_t Nx_tot = 1 + Nx + 1;
+	const double xmax = xmin + (Nx_tot-1)*dx;
+
+	struct implicit_eq_params eq_params = { 
+		NULL, wf_tot, dx, xmin, dt, 1, 1, 0 
+	}; // NULL and 0 should be replaced by appropriate one
+	gsl_multiroot_function eq_f = {implicit_eq, Ndim, &eq_params};
+
+	std::complex<double> *const wf = wf_tot + 1;
+	this->Propagator_on_Box_1D::propagate(wf, dt, 1);
+
+	gsl_vector *dqvec = gsl_vector_alloc(Ndim);
+	for (size_t iq=0; iq<Nq; ++iq) {
+		double xp = qarr[iq];
+		gsl_vector_set(dqvec, 0, 0.);
+		double qvec[Ndim]; qvec[0]	= { qarr[iq] };
+		if ((xp<xmin) || (xp>=xmax)) { continue; }
+		eq_params.qvec = qvec;
+		if (EXIT_SUCCESS !=	eval_is0(xp+0., Nx_tot, dx, xmin, &eq_params.is0)) {
+			std::cerr << "[ERROR] Failed to evaluate `is0`\n";
+			return EXIT_FAILURE;
+		}
+		gsl_multiroot_fsolver_set(s, &eq_f, dqvec); 
+		size_t i=0;
+		const size_t max_iter = 200;
+		int status;
+		for (; i<max_iter; ++i) {
+			status = gsl_multiroot_fsolver_iterate(s);
+			if (status) { break; }
+			status = gsl_multiroot_test_residual(s->f, 1e-7);
+			if (status != GSL_CONTINUE) { break; }
+		}
+		if (i>=max_iter) {
+			std::cerr << "[ERROR] Max iteration reached\n";
+			return EXIT_FAILURE;
+		}
+		if (status != GSL_SUCCESS) {
+			std::cerr << "[ERROR] The iteration failed with error: " 
+				<< gsl_strerror(status) << std::endl;
+			return EXIT_FAILURE;
+		}
+		qarr[iq] += gsl_vector_get(dqvec, 0);
+	}
+	gsl_vector_free(dqvec);
+
+	return EXIT_SUCCESS;
+}
+
 
 int implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
 
