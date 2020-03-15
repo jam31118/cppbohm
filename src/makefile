@@ -17,7 +17,8 @@ $(LIB_FILE): lapack.o fd.o $(WF_LIB) $(PROPAGATOR_LIB)
 	$(CXX) -o $@ -shared *.o $(LAPACK_LIB_RPATH_FLAGS) $(LAPACK_LIB_FLAGS) \
 		-Wl,--whole-archive \
 		$(WF_LIB_DIR)/$(WF_LIB) $(PROPAGATOR_LIB_DIR)/$(PROPAGATOR_LIB) \
-		-Wl,--no-whole-archive
+		-Wl,--no-whole-archive \
+		$(GSL_LIB_FLAGS)
 
 lapack.o: lapack.cc
 	$(CXX) -o $@ $< -c -fPIC $(OPT_FLAGS) $(WARN_FLAGS)

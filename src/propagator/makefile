@@ -9,7 +9,8 @@ $(LIB_FILE): bohm-propagator-on-box-1d.o
 
 bohm-propagator-on-box-1d.o: bohm-propagator-on-box-1d.cc
 	$(CXX) -o $@ $< -c -fPIC $(OPT_FLAGS) $(WARN_FLAGS) \
-		$(TDSE_INC_FLAGS) $(TDSE_LIB_FLAGS)
+		$(TDSE_INC_FLAGS) \
+		$(GSL_INC_FLAGS)
 
 clean:
 	$(RM) *.o *.a
