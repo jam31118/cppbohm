@@ -1,7 +1,8 @@
-Nx int 5
+Nx int 21
 dx double 0.2
 
-dt double 0.05
+Nt int 101
+dt double 0.1
 
 Nq int 9
 xmin double 0
