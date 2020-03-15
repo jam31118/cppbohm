@@ -25,7 +25,6 @@
 struct implicit_eq_params {
 	double *qvec;
 	std::complex<double> *wf_tot;
-	size_t Nx_tot;
 	double dx_grid;
 	double xmin;
 	double dt;
@@ -39,31 +38,15 @@ int implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
 	struct implicit_eq_params *const pp = (struct implicit_eq_params *) params;	
 
 	const double xp = pp->qvec[0];
-	std::complex<double> *const wf_tot = pp->wf_tot; 
-//	const size_t Nx_tot = pp->Nx_tot;
-	const double dx_grid = pp->dx_grid;
-	const double xmin = pp->xmin;
-	const double dt = pp->dt;
-	const double hbar = pp->hbar, mass = pp->mass;
-	const size_t is0 = pp->is0;
-
 	const double dxp = gsl_vector_get(dqvec, 0);
-
 	const double xp_next = xp + dxp;
 
 	std::complex<double> wf_derivs[FD_STENCIL_NUM];
-//	size_t is0;
-//	int stat = eval_f_and_derivs(
-//			xp_next, wf_tot, Nx_tot, dx_grid, xmin, wf_derivs, &is0);
 	int stat = eval_f_and_derivs_with_is0(
-			xp_next, wf_tot, dx_grid, xmin, wf_derivs, is0);
+			xp_next, pp->wf_tot, pp->dx_grid, pp->xmin, wf_derivs, pp->is0);
 	if (stat != EXIT_SUCCESS) {
-		std::cerr << "[ERROR] Failed to evaluate wf value and derivatives "
-			"(i.e. wf, dx_wf, ...)\n";
-		std::cerr << "[ERROR] The particle position xp_next=" 
-			<< xp_next << std::endl;
+		std::cerr << "[ERROR] Failed to evaluate wf value and derivatives\n";
 		throw "wf_derivs evaluation failure";
-//		return EXIT_FAILURE;
 	}
 
 	std::complex<double> wf_q = wf_derivs[0], dx_wf_q = wf_derivs[1];
@@ -72,14 +55,11 @@ int implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
 		std::cerr << "[ERROR] Wavefunction node encountered\n";
 		std::cerr << "[ERROR] The particle position xp_next=" 
 			<< xp_next << std::endl;
-		return GSL_EBADFUNC; 
+		throw "wavefunction node encountered"; 
 	}
 
-	double v = (hbar / mass) * std::imag( dx_wf_q / wf_q );
-
-//	std::cout << "is0, x[is0], xp, dxp, wf_q, dx_wf_q, v = " << is0 << ", " << xmin + is0*dx_grid << ", " << xp << ", " << dxp << ", " << wf_q << ", " << dx_wf_q << ", " << v << std::endl;
-
-	double eq_x = - dxp + dt * v;
+	double v = (pp->hbar / pp->mass) * std::imag( dx_wf_q / wf_q );
+	double eq_x = - dxp + pp->dt * v;
 	gsl_vector_set(eq, 0, eq_x);
 
 	return GSL_SUCCESS;
@@ -142,7 +122,6 @@ int main() {
 	// Set particle coordinates 
 	// 
 	double *qarr = new double[Nq];
-//	set_to_randoms(qarr, Nq, xmin, xmin+(Nx+1)*dx);
 	for (size_t i=0; i<Nq; ++i) { qarr[i] = (i+1) * (Nx_tot-1)*dx / (Nq-1+2); }
 
 
@@ -173,9 +152,8 @@ int main() {
 
 
 	const size_t Ndim = 1;
-//	double dxp0[Ndim] = {0.0};
 	struct implicit_eq_params eq_params = {
-		NULL, wf_tot, Nx_tot, dx, xmin, dt, 1, 1, 0
+		NULL, wf_tot, dx, xmin, dt, 1, 1, 0
 	};
 	gsl_multiroot_function eq_f = {implicit_eq, Ndim, &eq_params};
 	gsl_multiroot_fsolver *s = gsl_multiroot_fsolver_alloc(
@@ -195,7 +173,6 @@ int main() {
 				std::cerr << "[ERROR] Failed to evaluate `is0`\n";
 				return EXIT_FAILURE;
 			}
-
 			gsl_multiroot_fsolver_set(s, &eq_f, dqvec); 
 			size_t i=0;
 			const size_t max_iter = 200;
@@ -206,7 +183,6 @@ int main() {
 				status = gsl_multiroot_test_residual(s->f, 1e-7);
 				if (status != GSL_CONTINUE) { break; }
 			}
-//			std::cout << "[ LOG ] status = " << gsl_strerror(status) << std::endl;
 			if (i>=max_iter) {
 				std::cerr << "[ERROR] Max iteration reached\n";
 				return EXIT_FAILURE;
@@ -216,13 +192,10 @@ int main() {
 					<< gsl_strerror(status) << std::endl;
 				return EXIT_FAILURE;
 			}
-
 			qarr[iq] += gsl_vector_get(dqvec, 0);
 		}
-
 		std::copy(wf_tot, wf_tot_max, wf_t[it]);
 		std::copy(qarr, qarr_max, qarr_t[it]);
-
 	}
 	gsl_vector_free(dqvec);
 
@@ -234,8 +207,6 @@ int main() {
 	std::ofstream qarr_t_file("qarr_t.bin", std::ios::binary);
 	qarr_t_file.write((char *) qarr_t_1d, Nt*Nq*sizeof(double));
 	qarr_t_file.close();
-
-
 
 
 
