@@ -11,6 +11,7 @@
 // Headers from TDSE package
 //
 #include "array.h"
+#include "wf/wavefunction-on-box-1d.h"
 
 // Headers from PARAM package
 //
@@ -64,7 +65,6 @@ int implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
 
 	return GSL_SUCCESS;
 }
-
 
 
 
@@ -146,6 +146,7 @@ int main() {
 
 
 
+
 	double *const qarr_max = qarr + Nq;
 	std::copy(wf_tot, wf_tot_max, wf_t[0]);
 	std::copy(qarr, qarr_max, qarr_t[0]);
@@ -200,6 +201,13 @@ int main() {
 	gsl_vector_free(dqvec);
 
 	
+
+	// Store data to files
+	// 	
+	std::ofstream wf_file("wf.bin", std::ios::binary);
+	wf_file.write((char *) wf_tot, Nx_tot * sizeof(std::complex<double>));
+	wf_file.close();
+
 	std::ofstream wf_t_file("wf_t.bin", std::ios::binary);
 	wf_t_file.write((char *) wf_t_1d, Nt*Nx_tot*sizeof(std::complex<double>));
 	wf_t_file.close();
@@ -210,32 +218,10 @@ int main() {
 
 
 
-
-	std::complex<double> *wf_qarr = new std::complex<double>[Nq];
-	std::complex<double> *dx_wf_qarr = new std::complex<double>[Nq];
-
-	std::complex<double> wf_derivs[FD_STENCIL_NUM];
-	int stat;
-	size_t is0;
-	for (size_t i=0; i<Nq; ++i) {
-		stat = eval_f_and_derivs(qarr[i], wf_tot, Nx_tot, dx, xmin, wf_derivs, &is0);
-		if (stat != EXIT_SUCCESS) {
-			std::cout << "[ERROR] Failed to evaluate wf value and derivatives "
-				"(i.e. wf, dx_wf, ...)\n";
-			std::cout << "[ERROR] The particle position x=" << qarr[i] << std::endl;
-			return EXIT_FAILURE;
-		}
-		wf_qarr[i] = wf_derivs[0];
-		dx_wf_qarr[i] = wf_derivs[1];
-	}
-
-
 	// Construct spatial array
 	//
 	double *xarr = new double[Nx_tot];
-	for (double *px=xarr, *pxmax=xarr+Nx_tot, val=xmin; px<pxmax; ++px, val+=dx)
-	{ *px = val; }
-
+	Wavefunction_on_Box_1D::eval_x_tot_arr(xarr, Nx_tot, dx, xmin);
 
 	// Store data to files
 	// 
@@ -243,21 +229,6 @@ int main() {
 	xarr_file.write((char *) xarr, Nx_tot * sizeof(double));
 	xarr_file.close();
 
-	std::ofstream qarr_file("qarr.bin", std::ios::binary);
-	qarr_file.write((char *) qarr, Nq * sizeof(double));
-	qarr_file.close();
-
-	std::ofstream wf_qarr_file("wf_qarr.bin", std::ios::binary);
-	wf_qarr_file.write((char *) wf_qarr, Nq * sizeof(std::complex<double>));
-	wf_qarr_file.close();	
-
-	std::ofstream dx_wf_qarr_file("dx_wf_qarr.bin", std::ios::binary);
-	dx_wf_qarr_file.write((char *) dx_wf_qarr, Nq * sizeof(std::complex<double>));
-	dx_wf_qarr_file.close();
-	
-	std::ofstream wf_file("wf.bin", std::ios::binary);
-	wf_file.write((char *) wf_tot, Nx_tot * sizeof(std::complex<double>));
-	wf_file.close();
 
 
 	// Free memory and return
@@ -267,9 +238,6 @@ int main() {
 
 	delete [] xarr;
 	delete [] qarr;
-
-	delete [] wf_qarr;
-	delete [] dx_wf_qarr;
 
 	delete [] wf_t;
 	delete [] wf_t_1d;
