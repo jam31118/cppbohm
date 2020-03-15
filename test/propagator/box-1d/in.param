@@ -1,0 +1,7 @@
+Nx int 5
+dx double 0.2
+
+dt double 0.05
+
+Nq int 11
+
