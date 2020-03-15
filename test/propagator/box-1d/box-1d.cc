@@ -47,7 +47,6 @@ int main() {
 	const size_t Nt = param.get_int("Nt");
 
 	const size_t Nx_tot = 1 + Nx + 1;
-//	const double xmax = xmin + (Nx_tot-1) * dx;
 
 
 	// Prepare potential array
@@ -77,7 +76,8 @@ int main() {
 
 	// Set particle coordinates 
 	// 
-	double *qarr = new double[Nq];
+	double *const qarr = new double[Nq];
+	double *const qarr_max = qarr + Nq;
 	for (size_t i=0; i<Nq; ++i) { qarr[i] = (i+1) * (Nx_tot-1)*dx / (Nq-1+2); }
 
 
@@ -86,7 +86,6 @@ int main() {
 	std::cout << "[ LOG ] Particle coordinates: ";
 	for (size_t i=0; i<Nq; ++i) { std::cout << qarr[i] << " "; }
 	std::cout << std::endl;
-
 
 
 	// Prepare storage for propagation
@@ -100,65 +99,20 @@ int main() {
 	set_2d_view_of_1d(qarr_t, qarr_t_1d, Nt, Nq);
 	
 
-
-	double *const qarr_max = qarr + Nq;
+	
+	// Propagete
+	//
 	std::copy(wf_tot, wf_tot_max, wf_t[0]);
 	std::copy(qarr, qarr_max, qarr_t[0]);
 
-
-//	const size_t Ndim = 1;
-//	struct implicit_eq_params eq_params = { 
-//		NULL, wf_tot, dx, xmin, dt, 1, 1, 0 
-//	};
-//	gsl_multiroot_function eq_f = {implicit_eq, Ndim, &eq_params};
-//	gsl_multiroot_fsolver *s = gsl_multiroot_fsolver_alloc(
-//			gsl_multiroot_fsolver_hybrids, Ndim);
-//	gsl_vector *dqvec = gsl_vector_alloc(Ndim);
 	for (size_t it=1; it<Nt; ++it) {
-
-		prop.propagate(wf_tot, dt, qarr, Nq, xmin);
-
-
-//		prop.Propagator_on_Box_1D::propagate(wf, dt, 1);
-//
-//		for (size_t iq=0; iq<Nq; ++iq) {
-//			double xp = qarr[iq];
-//			gsl_vector_set(dqvec, 0, 0.);
-//			double qvec[Ndim] = { qarr[iq] };
-//			if ((xp<xmin) || (xp>=xmax)) { continue; }
-//			eq_params.qvec = qvec;
-//			if (EXIT_SUCCESS !=	eval_is0(xp+0., Nx_tot, dx, xmin, &eq_params.is0)) {
-//				std::cerr << "[ERROR] Failed to evaluate `is0`\n";
-//				return EXIT_FAILURE;
-//			}
-//			gsl_multiroot_fsolver_set(s, &eq_f, dqvec); 
-//			size_t i=0;
-//			const size_t max_iter = 200;
-//			int status;
-//			for (; i<max_iter; ++i) {
-//				status = gsl_multiroot_fsolver_iterate(s);
-//				if (status) { break; }
-//				status = gsl_multiroot_test_residual(s->f, 1e-7);
-//				if (status != GSL_CONTINUE) { break; }
-//			}
-//			if (i>=max_iter) {
-//				std::cerr << "[ERROR] Max iteration reached\n";
-//				return EXIT_FAILURE;
-//			}
-//			if (status != GSL_SUCCESS) {
-//				std::cerr << "[ERROR] The iteration failed with error: " 
-//					<< gsl_strerror(status) << std::endl;
-//				return EXIT_FAILURE;
-//			}
-//			qarr[iq] += gsl_vector_get(dqvec, 0);
-//		}
-
+		if (EXIT_SUCCESS != prop.propagate(wf_tot, dt, qarr, Nq, xmin)) {
+			std::cerr << "[ERROR] Failed to propagate with particles\n";
+			return EXIT_FAILURE;
+		}
 		std::copy(wf_tot, wf_tot_max, wf_t[it]);
 		std::copy(qarr, qarr_max, qarr_t[it]);
 	}
-//	gsl_vector_free(dqvec);
-//	gsl_multiroot_fsolver_free(s);
-
 	
 
 	// Store data to files
