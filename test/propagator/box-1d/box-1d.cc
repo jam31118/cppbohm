@@ -153,8 +153,8 @@ int main() {
 
 
 	const size_t Ndim = 1;
-	struct implicit_eq_params eq_params = {
-		NULL, wf_tot, dx, xmin, dt, 1, 1, 0
+	struct implicit_eq_params eq_params = { 
+		NULL, wf_tot, dx, xmin, dt, 1, 1, 0 
 	};
 	gsl_multiroot_function eq_f = {implicit_eq, Ndim, &eq_params};
 	gsl_multiroot_fsolver *s = gsl_multiroot_fsolver_alloc(
@@ -218,25 +218,11 @@ int main() {
 
 
 
-	// Construct spatial array
-	//
-	double *xarr = new double[Nx_tot];
-	Wavefunction_on_Box_1D::eval_x_tot_arr(xarr, Nx_tot, dx, xmin);
-
-	// Store data to files
-	// 
-	std::ofstream xarr_file("xarr.bin", std::ios::binary);
-	xarr_file.write((char *) xarr, Nx_tot * sizeof(double));
-	xarr_file.close();
-
-
-
 	// Free memory and return
 	//
 	delete [] Vx;	
 	delete [] wf_tot;
 
-	delete [] xarr;
 	delete [] qarr;
 
 	delete [] wf_t;
