@@ -1,19 +1,24 @@
 #include "../include/fd.h"
 #include "../include/lapack.hh"
 
+#include <iostream>
+
 int eval_f_and_derivs(
 		const double x, const std::complex<double> *wf, 
 		const size_t Nx_tot, const double dx, const double x0,
-		std::complex<double> *wf_derivs) 
+		std::complex<double> *wf_derivs, size_t *is0) 
 {
 	const double xmin = x0, xmax = x0 + ( Nx_tot - 1 ) * dx;
 	if ((xmin > x) || (x >= xmax)) { return EXIT_FAILURE; }
+	if ((wf[0] != 0.) || (wf[Nx_tot-1] != 0.)) { return EXIT_FAILURE; }
 	
-	const size_t Ns = 4, il = (size_t) (x - xmin) / dx;
-	const size_t is0 = (il-1) + (il<1)*(1-il) + (il>Nx_tot-3)*(Nx_tot-3-il);
+	const size_t Ns = FD_STENCIL_NUM, il = (size_t) abs( (int) ((x - xmin) / dx));
+//	std::cout << "x, il, (x - xmin) / dx = " << x << ", " << il << ", "<< (x - xmin) / dx << std::endl;
+	const size_t _is0 = (il-1) + (il<1)*(1-il) + (il>Nx_tot-3)*(Nx_tot-3-il);
+	*is0 = _is0;
 	double xs_minus_x[Ns];  // finite difference stencils minus x
 	double *const pxsmax = xs_minus_x + Ns;
-	for (double *pxs=xs_minus_x, val=xmin+is0*dx-x; 
+	for (double *pxs=xs_minus_x, val=xmin+_is0*dx-x; 
 			pxs < pxsmax; ++pxs, val += dx) { *pxs = val; }
 
 	double A1d[Ns*Ns];
@@ -24,7 +29,7 @@ int eval_f_and_derivs(
 	}
 	const size_t ncol_b = 2;
 	double b1d[ncol_b*Ns];
-	const std::complex<double> *pwf = wf+is0, *pwfmax = wf+is0+Ns;
+	const std::complex<double> *pwf = wf+_is0, *pwfmax = wf+_is0+Ns;
 	std::complex<double> _wf;
 	for (double *breal=b1d, *bimag=b1d+Ns; pwf < pwfmax; ++breal, ++bimag, ++pwf)
 	{ 
