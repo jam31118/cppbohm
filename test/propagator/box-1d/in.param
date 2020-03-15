@@ -3,5 +3,6 @@ dx double 0.2
 
 dt double 0.05
 
-Nq int 11
+Nq int 9
+xmin double 0
 
