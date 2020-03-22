@@ -70,7 +70,7 @@ int main() {
 
 	// Construct propagator
 	//
-	Bohm_Propagator_on_Box_1D prop(Nx, dx, Vx);  // for particles
+	Bohm_Propagator_on_Box_1D prop(Nx, dx);  // for particles
 	Propagator_on_Box_1D wf_propagator(Nx, dx, Vx);  // for wavefuntion
 	struct wf_prop_params pparams = { &wf_propagator };
 
@@ -83,7 +83,7 @@ int main() {
 	set_to_randoms(wf, Nx);
 	wf_tot[0] = 0.; wf_tot[Nx_tot-1] = 0.;
 	// Proagate into the state with lowest energy possible
-	if (prop.propagate_to_ground_state(wf, dt, 20000, 1e-10) != EXIT_SUCCESS) {
+	if (wf_propagator.propagate_to_ground_state(wf, dt, 20000, 1e-10) != EXIT_SUCCESS) {
 		std::cerr << "[ERROR] Failed to propagator to ground state\n";
 		return EXIT_FAILURE;
 	}

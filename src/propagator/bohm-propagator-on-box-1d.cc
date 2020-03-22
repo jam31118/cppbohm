@@ -5,24 +5,22 @@
 #include <complex>
 
 
-Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D(): Propagator_on_Box_1D() {}
+Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D() {}
 
 
 Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D(
-		size_t Nx, double dx, double *Vx, double hbar, double mass):
-	Propagator_on_Box_1D(Nx, dx, Vx, hbar, mass) {	
-
-	s = gsl_multiroot_fsolver_alloc(gsl_multiroot_fsolver_hybrids, Ndim);
+		size_t Nx, double dx, double hbar, double mass): hbar(hbar), mass(mass)
+{	
+	p_wf = new Wavefunction_on_Box_1D(Nx, dx);
+	s = gsl_multiroot_fsolver_alloc(gsl_multiroot_fsolver_hybrids, p_wf->Ndim);
 }
 
 
 Bohm_Propagator_on_Box_1D::~Bohm_Propagator_on_Box_1D() {
+	delete p_wf;
 	gsl_multiroot_fsolver_free(s);
 }
 
-
-// may come from Wavefunction
-// Nx, dx, Ndim
 
 int Bohm_Propagator_on_Box_1D::propagate(
 		std::complex<double> *wf_tot, double dt, 
@@ -31,25 +29,25 @@ int Bohm_Propagator_on_Box_1D::propagate(
 		double *qarr, size_t Nq, double xmin) 
 {
 
-	const size_t Nx_tot = 1 + Nx + 1;
-	const double xmax = xmin + (Nx_tot-1)*dx;
+	const size_t Nx_tot = p_wf->get_Nx_tot();
+	const double xmax = p_wf->get_xmax(xmin);
+	const double dx = p_wf->get_dx();
 
 	struct implicit_eq_params eq_params = { 
 		NULL, wf_tot, dx, xmin, dt, 1, 1, 0 
 	}; // NULL and 0 should be replaced by appropriate one
-	gsl_multiroot_function eq_f = {implicit_eq, Ndim, &eq_params};
+	gsl_multiroot_function eq_f = {implicit_eq, p_wf->Ndim, &eq_params};
 
 	std::complex<double> *const wf = wf_tot + 1;
-//	this->Propagator_on_Box_1D::propagate(wf, dt, 1);
 	if (EXIT_SUCCESS != prop_wf(wf, dt, prop_wf_params)) {
 		std::cerr << "[ERROR] Failed to propagate wavefunction\n";
 	}
 
-	gsl_vector *dqvec = gsl_vector_alloc(Ndim);
+	gsl_vector *dqvec = gsl_vector_alloc(p_wf->Ndim);
 	for (size_t iq=0; iq<Nq; ++iq) {
 		double xp = qarr[iq];
 		gsl_vector_set(dqvec, 0, 0.);
-		double qvec[Ndim]; qvec[0]	= { qarr[iq] };
+		double qvec[p_wf->Ndim]; qvec[0]	= { qarr[iq] };
 		if ((xp<xmin) || (xp>=xmax)) { continue; }
 		eq_params.qvec = qvec;
 		if (EXIT_SUCCESS !=	eval_is0(xp+0., Nx_tot, dx, xmin, &eq_params.is0)) {
