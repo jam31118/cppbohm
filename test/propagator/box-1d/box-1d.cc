@@ -80,14 +80,41 @@ int main() {
 	std::complex<double> *const wf_tot = new std::complex<double>[Nx_tot];
 	std::complex<double> *const wf_tot_max = wf_tot + Nx_tot;
 	std::complex<double> *const wf = wf_tot + 1;
-	set_to_randoms(wf, Nx);
-	wf_tot[0] = 0.; wf_tot[Nx_tot-1] = 0.;
-	// Proagate into the state with lowest energy possible
-	if (wf_propagator.propagate_to_ground_state(wf, dt, 20000, 1e-10) != EXIT_SUCCESS) {
-		std::cerr << "[ERROR] Failed to propagator to ground state\n";
-		return EXIT_FAILURE;
+
+	std::string wf_t0_fname;
+	try { wf_t0_fname = param.get_string("wf-t0-file"); }
+	catch (...) { 
+		std::cout << "[ LOG ] No file for initial wavefunction found. "
+			"Falling back to search for ground state\n";
 	}
 
+	if (!wf_t0_fname.empty()) {
+
+		// Initialize wavefunction from input file
+		// 
+		try { 
+			std::ifstream wf_t0_file(wf_t0_fname, std::ios::binary);
+			wf_t0_file.read((char *) wf_tot, Nx_tot * sizeof(std::complex<double>));
+			wf_t0_file.close();
+		} catch (...) {
+			std::cerr << "[ERROR] Failed to read initial wavefunction from: " 
+				<< wf_t0_fname << std::endl;
+			return EXIT_FAILURE;
+		}
+
+	} else {
+
+		// Initialize wavefunction as that of lowest energy possible
+		// 
+		set_to_randoms(wf, Nx);
+		wf_tot[0] = 0.; wf_tot[Nx_tot-1] = 0.;
+		// Proagate into the state with lowest energy possible
+		if (wf_propagator.propagate_to_ground_state(wf, dt, 20000, 1e-10) != EXIT_SUCCESS) {
+			std::cerr << "[ERROR] Failed to propagator to ground state\n";
+			return EXIT_FAILURE;
+		}
+
+	}
 
 	// Set particle coordinates 
 	// 
@@ -126,10 +153,6 @@ int main() {
 			std::cerr << "[ERROR] Failed to propagate with particles\n";
 			return EXIT_FAILURE;
 		}
-//		if (EXIT_SUCCESS != prop.propagate(wf_tot, dt, qarr, Nq, xmin)) {
-//			std::cerr << "[ERROR] Failed to propagate with particles\n";
-//			return EXIT_FAILURE;
-//		}
 		std::copy(wf_tot, wf_tot_max, wf_t[it]);
 		std::copy(qarr, qarr_max, qarr_t[it]);
 	}
