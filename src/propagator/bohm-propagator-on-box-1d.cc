@@ -68,9 +68,9 @@ int Bohm_Propagator_on_Box_1D::propagate(
 			continue; 
 		}
 		// Prepare `eq_params`: set member `qvec`
-		double qvec[p_wf->Ndim]; qvec[0]	= { qarr[iq] };
-		eq_params.qvec = qvec;
-//		eq_params.qvec = qarr + iq; // i.e. &qarr[iq];
+//		double qvec[p_wf->Ndim]; qvec[0]	= { qarr[iq] };
+//		eq_params.qvec = qvec;
+		eq_params.qvec = qarr + iq; // i.e. &qarr[iq];
 		// Prepare `eq_params`: set member `is0`
 		if (EXIT_SUCCESS !=	eval_is0(xp+dxp_init, Nx_tot, dx, xmin, &eq_params.is0)) {
 			std::cerr << "[ERROR] Failed to evaluate `is0`\n";
