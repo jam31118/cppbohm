@@ -21,8 +21,13 @@ Bohm_Propagator_on_Box_1D::~Bohm_Propagator_on_Box_1D() {
 }
 
 
+// may come from Wavefunction
+// Nx, dx, Ndim
+
 int Bohm_Propagator_on_Box_1D::propagate(
 		std::complex<double> *wf_tot, double dt, 
+		int (*prop_wf)(std::complex<double> *wf, double dt, void *params),
+		void *prop_wf_params,
 		double *qarr, size_t Nq, double xmin) 
 {
 
@@ -35,7 +40,10 @@ int Bohm_Propagator_on_Box_1D::propagate(
 	gsl_multiroot_function eq_f = {implicit_eq, Ndim, &eq_params};
 
 	std::complex<double> *const wf = wf_tot + 1;
-	this->Propagator_on_Box_1D::propagate(wf, dt, 1);
+//	this->Propagator_on_Box_1D::propagate(wf, dt, 1);
+	if (EXIT_SUCCESS != prop_wf(wf, dt, prop_wf_params)) {
+		std::cerr << "[ERROR] Failed to propagate wavefunction\n";
+	}
 
 	gsl_vector *dqvec = gsl_vector_alloc(Ndim);
 	for (size_t iq=0; iq<Nq; ++iq) {

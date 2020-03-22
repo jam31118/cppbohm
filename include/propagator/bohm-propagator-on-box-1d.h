@@ -23,6 +23,10 @@ public:
 	~Bohm_Propagator_on_Box_1D();
 	int propagate(std::complex<double> *wf_tot, double dt, 
 			double *qarr, size_t Nq, double xmin); 
+	int propagate(std::complex<double> *wf_tot, double dt, 
+			int (*prop_wf)(std::complex<double> *wf, double dt, void *params), 
+			void *prop_wf_params,
+			double *qarr, size_t Nq, double xmin); 
 };
 
 struct implicit_eq_params {
