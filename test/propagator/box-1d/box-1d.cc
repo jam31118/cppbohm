@@ -12,6 +12,7 @@
 //
 #include "array.h"
 #include "wf/wavefunction-on-box-1d.h"
+#include "propagator/propagator-on-box-1d.h"
 
 // Headers from PARAM package
 //
@@ -21,6 +22,18 @@
 //
 #include "../../../include/propagator/bohm-propagator-on-box-1d.h"
 #include "../../../include/fd.h"
+
+
+struct wf_prop_params {
+	Propagator_on_Box_1D *p_wf_propagator;
+};
+
+int prop_wf(std::complex<double> *wf, double dt, void *params) {
+	struct wf_prop_params *pparams = (wf_prop_params *) params;
+	return pparams->p_wf_propagator->propagate(wf, dt, 1);
+}
+
+
 
 
 
@@ -57,7 +70,9 @@ int main() {
 
 	// Construct propagator
 	//
-	Bohm_Propagator_on_Box_1D prop(Nx, dx, Vx);
+	Bohm_Propagator_on_Box_1D prop(Nx, dx, Vx);  // for particles
+	Propagator_on_Box_1D wf_propagator(Nx, dx, Vx);  // for wavefuntion
+	struct wf_prop_params pparams = { &wf_propagator };
 
 
 	// Prepare initial state
@@ -104,12 +119,17 @@ int main() {
 	//
 	std::copy(wf_tot, wf_tot_max, wf_t[0]);
 	std::copy(qarr, qarr_max, qarr_t[0]);
-
+	int stat;
 	for (size_t it=1; it<Nt; ++it) {
-		if (EXIT_SUCCESS != prop.propagate(wf_tot, dt, qarr, Nq, xmin)) {
+		stat = prop.propagate(wf_tot, dt, &prop_wf, &pparams, qarr, Nq, xmin);
+		if (stat != EXIT_SUCCESS) {
 			std::cerr << "[ERROR] Failed to propagate with particles\n";
 			return EXIT_FAILURE;
 		}
+//		if (EXIT_SUCCESS != prop.propagate(wf_tot, dt, qarr, Nq, xmin)) {
+//			std::cerr << "[ERROR] Failed to propagate with particles\n";
+//			return EXIT_FAILURE;
+//		}
 		std::copy(wf_tot, wf_tot_max, wf_t[it]);
 		std::copy(qarr, qarr_max, qarr_t[it]);
 	}
