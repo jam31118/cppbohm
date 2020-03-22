@@ -11,15 +11,20 @@
 #include "propagator/propagator-on-box-1d.h"
 #include "wf/wavefunction-on-box-1d.h"
 
+// From this library (BOHM)
+//
+#include "../../include/wf/bohm-wavefunction-on-box-1d.h"
+
 
 class Bohm_Propagator_on_Box_1D {
 
-	Wavefunction_on_Box_1D *p_wf;
+//	Wavefunction_on_Box_1D *p_wf;
+	Bohm_Wavefunction_on_Box_1D *p_wf;
 	double hbar, mass;
 	gsl_multiroot_fsolver *s;
 
 public:
-	Bohm_Propagator_on_Box_1D();
+//	Bohm_Propagator_on_Box_1D();
 	Bohm_Propagator_on_Box_1D(
 			size_t Nx, double dx, double hbar=1, double mass=1);
 	~Bohm_Propagator_on_Box_1D();

@@ -14,16 +14,64 @@ struct _implicit_eq_params {
 	size_t is0;
 };
 
-int _implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq);
+
+int _implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
+
+	struct _implicit_eq_params *const pp = (struct _implicit_eq_params *) params;	
+
+//	const double xp = pp->qvec[0];
+
+	double qvec_next[Bohm_Wavefunction_on_Box_1D::Ndim];
+	for (size_t idim=0; idim<Bohm_Wavefunction_on_Box_1D::Ndim; ++idim)
+	{ qvec_next[idim] = pp->qvec[idim] + gsl_vector_get(dqvec, idim);	}
+
+	
+	std::complex<double> wf_q, grad_q_wf[Bohm_Wavefunction_on_Box_1D::Ndim];
+	int stat = Bohm_Wavefunction_on_Box_1D::wf_and_grad_q_wf(
+			&wf_q, grad_q_wf, qvec_next, pp->wf_tot, pp->dx_grid, pp->xmin, pp->is0, true);
+	if (stat != EXIT_SUCCESS) { 
+		std::cerr << "[ERROR] Failed to evaluate wf and grad_q_wf\n"; 
+		throw "Failed to evaluate wf and grad_q_wf";
+	}
 
 
-Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D() {}
+//	const double xp_next = qvec[0];
+//	std::complex<double> wf_derivs[FD_STENCIL_NUM];
+//	int stat = eval_f_and_derivs_with_is0(
+//			xp_next, pp->wf_tot, pp->dx_grid, pp->xmin, wf_derivs, pp->is0);
+//	if (stat != EXIT_SUCCESS) {
+//		std::cerr << "[ERROR] Failed to evaluate wf value and derivatives\n";
+//		throw "wf_derivs evaluation failure";
+//	}
+//
+//	std::complex<double> wf_q = wf_derivs[0], dx_wf_q = wf_derivs[1];
+//
+//	if (wf_q == 0.) { 
+//		std::cerr << "[ERROR] Wavefunction node encountered\n";
+//		std::cerr << "[ERROR] The particle position xp_next=" 
+//			<< xp_next << std::endl;
+//		throw "wavefunction node encountered"; 
+//	}
 
+	std::complex<double> dx_wf_q = grad_q_wf[0];
+	double v = (pp->hbar / pp->mass) * std::imag( dx_wf_q / wf_q );
+
+	const double dxp = gsl_vector_get(dqvec, 0);
+	double eq_x = - dxp + pp->dt * v;
+	gsl_vector_set(eq, 0, eq_x);
+
+	return GSL_SUCCESS;
+}
+
+
+
+//Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D() {}
 
 Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D(
 		size_t Nx, double dx, double hbar, double mass): hbar(hbar), mass(mass)
 {	
-	p_wf = new Wavefunction_on_Box_1D(Nx, dx);
+//	p_wf = new Wavefunction_on_Box_1D(Nx, dx);
+	p_wf = new Bohm_Wavefunction_on_Box_1D(Nx, dx, hbar, mass);
 	s = gsl_multiroot_fsolver_alloc(gsl_multiroot_fsolver_hybrids, p_wf->Ndim);
 }
 
@@ -104,36 +152,4 @@ int Bohm_Propagator_on_Box_1D::propagate(
 	return EXIT_SUCCESS;
 }
 
-
-int _implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
-
-	struct _implicit_eq_params *const pp = (struct _implicit_eq_params *) params;	
-
-	const double xp = pp->qvec[0];
-	const double dxp = gsl_vector_get(dqvec, 0);
-	const double xp_next = xp + dxp;
-
-	std::complex<double> wf_derivs[FD_STENCIL_NUM];
-	int stat = eval_f_and_derivs_with_is0(
-			xp_next, pp->wf_tot, pp->dx_grid, pp->xmin, wf_derivs, pp->is0);
-	if (stat != EXIT_SUCCESS) {
-		std::cerr << "[ERROR] Failed to evaluate wf value and derivatives\n";
-		throw "wf_derivs evaluation failure";
-	}
-
-	std::complex<double> wf_q = wf_derivs[0], dx_wf_q = wf_derivs[1];
-
-	if (wf_q == 0.) { 
-		std::cerr << "[ERROR] Wavefunction node encountered\n";
-		std::cerr << "[ERROR] The particle position xp_next=" 
-			<< xp_next << std::endl;
-		throw "wavefunction node encountered"; 
-	}
-
-	double v = (pp->hbar / pp->mass) * std::imag( dx_wf_q / wf_q );
-	double eq_x = - dxp + pp->dt * v;
-	gsl_vector_set(eq, 0, eq_x);
-
-	return GSL_SUCCESS;
-}
 
