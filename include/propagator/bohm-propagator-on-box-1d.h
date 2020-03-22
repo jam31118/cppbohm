@@ -18,20 +18,22 @@
 
 class Bohm_Propagator_on_Box_1D {
 
-//	Wavefunction_on_Box_1D *p_wf;
 	Bohm_Wavefunction_on_Box_1D *p_wf;
 	double hbar, mass;
 	gsl_multiroot_fsolver *s;
 
 public:
-//	Bohm_Propagator_on_Box_1D();
+
 	Bohm_Propagator_on_Box_1D(
-			size_t Nx, double dx, double hbar=1, double mass=1);
+			size_t Nx, double dx, double hbar=1., double mass=1.);
+
 	~Bohm_Propagator_on_Box_1D();
+
 	int propagate(std::complex<double> *wf_tot, double dt, 
 			int (*prop_wf)(std::complex<double> *wf, double dt, void *params), 
 			void *prop_wf_params,
 			double *qarr, size_t Nq, double xmin); 
+
 };
 
 #endif // _BOHM_PROPAGATOR_ON_BOX_1D_H_
