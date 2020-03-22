@@ -29,16 +29,4 @@ public:
 			double *qarr, size_t Nq, double xmin); 
 };
 
-struct implicit_eq_params {
-	double *qvec;
-	std::complex<double> *wf_tot;
-	double dx_grid;
-	double xmin;
-	double dt;
-	double hbar, mass;
-	size_t is0;
-};
-
-int implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq);
-
 #endif // _BOHM_PROPAGATOR_ON_BOX_1D_H_

@@ -4,6 +4,18 @@
 #include <iostream>
 #include <complex>
 
+struct _implicit_eq_params {
+	double *qvec;
+	std::complex<double> *wf_tot;
+	double dx_grid;
+	double xmin;
+	double dt;
+	double hbar, mass;
+	size_t is0;
+};
+
+int _implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq);
+
 
 Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D() {}
 
@@ -33,10 +45,10 @@ int Bohm_Propagator_on_Box_1D::propagate(
 	const double xmax = p_wf->get_xmax(xmin);
 	const double dx = p_wf->get_dx();
 
-	struct implicit_eq_params eq_params = { 
+	struct _implicit_eq_params eq_params = { 
 		NULL, wf_tot, dx, xmin, dt, 1, 1, 0 
 	}; // NULL and 0 should be replaced by appropriate one
-	gsl_multiroot_function eq_f = {implicit_eq, p_wf->Ndim, &eq_params};
+	gsl_multiroot_function eq_f = {_implicit_eq, p_wf->Ndim, &eq_params};
 
 	std::complex<double> *const wf = wf_tot + 1;
 	if (EXIT_SUCCESS != prop_wf(wf, dt, prop_wf_params)) {
@@ -81,9 +93,9 @@ int Bohm_Propagator_on_Box_1D::propagate(
 }
 
 
-int implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
+int _implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
 
-	struct implicit_eq_params *const pp = (struct implicit_eq_params *) params;	
+	struct _implicit_eq_params *const pp = (struct _implicit_eq_params *) params;	
 
 	const double xp = pp->qvec[0];
 	const double dxp = gsl_vector_get(dqvec, 0);
