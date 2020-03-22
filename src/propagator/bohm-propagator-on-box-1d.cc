@@ -54,26 +54,35 @@ int Bohm_Propagator_on_Box_1D::propagate(
 	if (EXIT_SUCCESS != prop_wf(wf, dt, prop_wf_params)) {
 		std::cerr << "[ERROR] Failed to propagate wavefunction\n";
 	}
+	
 
+	const double residual_tol = 1e-7;
+	const double dxp_init = 0.;
 	gsl_vector *dqvec = gsl_vector_alloc(p_wf->Ndim);
+	gsl_vector_set(dqvec, 0, dxp_init);
 	for (size_t iq=0; iq<Nq; ++iq) {
 		double xp = qarr[iq];
-		gsl_vector_set(dqvec, 0, 0.);
+		if ((xp<xmin) || (xp>=xmax)) { 
+			std::cout << "[ LOG ] particles out of bound: [" 
+				<< xmin << "," << xmax << "]"; 
+			continue; 
+		}
+		// Prepare `eq_params`: set member `qvec`
 		double qvec[p_wf->Ndim]; qvec[0]	= { qarr[iq] };
-		if ((xp<xmin) || (xp>=xmax)) { continue; }
 		eq_params.qvec = qvec;
-		if (EXIT_SUCCESS !=	eval_is0(xp+0., Nx_tot, dx, xmin, &eq_params.is0)) {
+//		eq_params.qvec = qarr + iq; // i.e. &qarr[iq];
+		// Prepare `eq_params`: set member `is0`
+		if (EXIT_SUCCESS !=	eval_is0(xp+dxp_init, Nx_tot, dx, xmin, &eq_params.is0)) {
 			std::cerr << "[ERROR] Failed to evaluate `is0`\n";
 			return EXIT_FAILURE;
 		}
 		gsl_multiroot_fsolver_set(s, &eq_f, dqvec); 
-		size_t i=0;
-		const size_t max_iter = 200;
+		size_t i=0; const size_t max_iter = 200;
 		int status;
 		for (; i<max_iter; ++i) {
 			status = gsl_multiroot_fsolver_iterate(s);
 			if (status) { break; }
-			status = gsl_multiroot_test_residual(s->f, 1e-7);
+			status = gsl_multiroot_test_residual(s->f, residual_tol);
 			if (status != GSL_CONTINUE) { break; }
 		}
 		if (i>=max_iter) {
@@ -85,9 +94,12 @@ int Bohm_Propagator_on_Box_1D::propagate(
 				<< gsl_strerror(status) << std::endl;
 			return EXIT_FAILURE;
 		}
-		qarr[iq] += gsl_vector_get(dqvec, 0);
+		
+		const double dxp = gsl_vector_get(s->x, 0);
+		qarr[iq] += dxp;
 	}
 	gsl_vector_free(dqvec);
+
 
 	return EXIT_SUCCESS;
 }
