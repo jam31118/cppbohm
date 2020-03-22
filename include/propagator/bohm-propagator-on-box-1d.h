@@ -34,6 +34,8 @@ public:
 			void *prop_wf_params,
 			double *qarr, size_t Nq, double xmin); 
 
+	int _propagate_core(
+			double *qarr, size_t Nq, gsl_multiroot_function *p_eq_f);
 };
 
 #endif // _BOHM_PROPAGATOR_ON_BOX_1D_H_
