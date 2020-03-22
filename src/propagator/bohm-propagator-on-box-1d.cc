@@ -69,68 +69,22 @@ int Bohm_Propagator_on_Box_1D::propagate(
 		double *qarr, size_t Nq, double xmin) 
 {
 
-	const double dx = p_wf->get_dx();
-
-	struct _implicit_eq_params eq_params = { 
-		NULL, wf_tot, dx, xmin, dt, 1, 1, 0 
-	}; // NULL and 0 should be replaced by appropriate one
+	// [NOTE] NULL and 0 should be replaced by appropriate one
+	struct _implicit_eq_params eq_params =
+	{ NULL, wf_tot, p_wf->get_dx(), xmin, dt, 1, 1, 0 };
+	
 	gsl_multiroot_function eq_f = {_implicit_eq, p_wf->Ndim, &eq_params};
 
 	std::complex<double> *const wf = wf_tot + 1;
 	if (EXIT_SUCCESS != prop_wf(wf, dt, prop_wf_params)) {
 		std::cerr << "[ERROR] Failed to propagate wavefunction\n";
+		return EXIT_FAILURE;
 	}
 	
 	if (EXIT_SUCCESS != _propagate_core(qarr, Nq, &eq_f)) {
 		std::cerr << "[ERROR] Failed to propagate particles\n"; 
 		return EXIT_FAILURE;
 	}
-
-
-
-//	const double xmax = p_wf->get_xmax(xmin);
-//	const size_t Nx_tot = p_wf->get_Nx_tot();
-//	const double residual_tol = 1e-7;
-//	const double dxp_init = 0.;
-//	gsl_vector *const dqvec = gsl_vector_alloc(p_wf->Ndim);
-//	gsl_vector_set(dqvec, 0, dxp_init);
-//	for (size_t iq=0; iq<Nq; ++iq) {
-//		double xp = qarr[iq];
-//		if ((xp<xmin) || (xp>=xmax)) { 
-//			std::cout << "[ LOG ] particles out of bound: [" 
-//				<< xmin << "," << xmax << "]"; 
-//			continue; 
-//		}
-//		// Prepare `eq_params`: set member `qvec`
-//		eq_params.qvec = qarr + iq; // i.e. &qarr[iq];
-//		// Prepare `eq_params`: set member `is0`
-//		if (EXIT_SUCCESS !=	eval_is0(xp+dxp_init,Nx_tot,dx,xmin,&eq_params.is0)) {
-//			std::cerr << "[ERROR] Failed to evaluate `is0`\n";
-//			return EXIT_FAILURE;
-//		}
-//		gsl_multiroot_fsolver_set(s, &eq_f, dqvec); 
-//		size_t i=0; const size_t max_iter = 200;
-//		int status;
-//		for (; i<max_iter; ++i) {
-//			status = gsl_multiroot_fsolver_iterate(s);
-//			if (status) { break; }
-//			status = gsl_multiroot_test_residual(s->f, residual_tol);
-//			if (status != GSL_CONTINUE) { break; }
-//		}
-//		if (i>=max_iter) {
-//			std::cerr << "[ERROR] Max iteration reached\n";
-//			return EXIT_FAILURE;
-//		}
-//		if (status != GSL_SUCCESS) {
-//			std::cerr << "[ERROR] The iteration failed with error: " 
-//				<< gsl_strerror(status) << std::endl;
-//			return EXIT_FAILURE;
-//		}
-//		
-//		const double dxp = gsl_vector_get(s->x, 0);
-//		qarr[iq] += dxp;
-//	}
-//	gsl_vector_free(dqvec);
 
 	return EXIT_SUCCESS;
 }
