@@ -3,3 +3,6 @@
 *.a
 lib/
 *.bin
+
+*.png
+*.gif

@@ -49,7 +49,7 @@ int main() {
 		return EXIT_FAILURE;
 	}
 	catch (...) { 
-		std::cerr << "[ERROR] Failed to construct param file with reason unknown"; 
+		std::cerr << "[ERROR] Failed to construct param file with unknown reason"; 
 		return EXIT_FAILURE;
 	}
 	const size_t Nx = param.get_int("Nx");
@@ -120,7 +120,8 @@ int main() {
 	// 
 	double *const qarr = new double[Nq];
 	double *const qarr_max = qarr + Nq;
-	for (size_t i=0; i<Nq; ++i) { qarr[i] = (i+1) * (Nx_tot-1)*dx / (Nq-1+2); }
+	for (size_t i=0; i<Nq; ++i) 
+	{ qarr[i] = (i+1) * (Nx_tot/2-1)*dx / (Nq-1+2) + (Nx_tot/4) * dx; }
 
 
 	// Print particle coordinates

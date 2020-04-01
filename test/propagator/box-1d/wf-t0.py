@@ -14,13 +14,14 @@ L = xarr[-1] - xarr[0]
 wf_E1 = sin(pi/L*xarr).astype(np.complex)
 wf_E2 = sin(2*pi/L*xarr).astype(np.complex)
 wf_E3 = sin(3*pi/L*xarr).astype(np.complex)
-wf_t0 = wf_E1 + 0.6 * wf_E3
+wf_t0 = wf_E1 + 0.3 * wf_E2
+#wf_t0 = wf_E1
 
 # Gaussian wave packet
-#xmin, xmax = xarr[[0,-1]]
-#xmid = 0.5 * (xmin + xmax)
+xmin, xmax = xarr[[0,-1]]
+xmid = 0.5 * (xmin + xmax)
+kx = 0.
 #wf_t0 = exp(-(xarr-xmid)**2).astype(np.complex)
-#kx = -4.
 #wf_t0 *= exp(1.j*kx*xarr)
 
 
