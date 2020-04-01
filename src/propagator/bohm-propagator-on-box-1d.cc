@@ -59,6 +59,7 @@ int _implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
 }
 
 
+
 Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D(
 		size_t Nx, double dx, double hbar, double mass): hbar(hbar), mass(mass)
 {	
@@ -67,10 +68,12 @@ Bohm_Propagator_on_Box_1D::Bohm_Propagator_on_Box_1D(
 }
 
 
+
 Bohm_Propagator_on_Box_1D::~Bohm_Propagator_on_Box_1D() {
 	delete p_wf;
 	gsl_multiroot_fsolver_free(s);
 }
+
 
 
 int Bohm_Propagator_on_Box_1D::propagate(
@@ -79,30 +82,36 @@ int Bohm_Propagator_on_Box_1D::propagate(
 		void *prop_wf_params,
 		double *qarr, size_t Nq, double xmin) 
 {
-
-	// [NOTE] NULL and 0 should be replaced by appropriate one
-	struct _implicit_eq_params eq_params =
-	{ NULL, wf_tot, p_wf->get_dx(), xmin, dt, hbar, mass, 0 };
-	
-	gsl_multiroot_function eq_f = {&_implicit_eq, p_wf->Ndim, &eq_params};
-
+	//// Propagate wavefunction
+	//
 	std::complex<double> *const wf = wf_tot + 1;
 	if (EXIT_SUCCESS != prop_wf(wf, dt, prop_wf_params)) {
 		std::cerr << "[ERROR] Failed to propagate wavefunction\n";
 		return EXIT_FAILURE;
 	}
 	
+	//// Propagate particles
+	//
+	// [NOTE] the first NULL and the last 0 should be replaced by appropriate one
+	struct _implicit_eq_params eq_params =
+	{ NULL, wf_tot, p_wf->get_dx(), xmin, dt, hbar, mass, 0 };
+	
+	gsl_multiroot_function eq_f = {&_implicit_eq, p_wf->Ndim, &eq_params};
+
 	if (EXIT_SUCCESS != _propagate_core(qarr, Nq, &eq_f)) {
 		std::cerr << "[ERROR] Failed to propagate particles\n"; 
 		return EXIT_FAILURE;
 	}
 
+	//// Return 
+	// if propagations for both wavefunction and particles 
+	// have ended without error
 	return EXIT_SUCCESS;
 }
 
 
 
-
+#ifdef DEBUG
 void print_state (size_t iq, double x, size_t iter, gsl_multiroot_fsolver *s) {
   printf ("iq = %2lu xp = % .8f iter = %3lu dxp = % .8f "
           "implicit_eq(dxp) = % .8e\n",
@@ -110,7 +119,12 @@ void print_state (size_t iq, double x, size_t iter, gsl_multiroot_fsolver *s) {
           gsl_vector_get (s->x, 0),
           gsl_vector_get (s->f, 0));
 }
+#endif // DEBUG
 
+
+/**
+ * The core part of particle propagation
+ */
 
 int Bohm_Propagator_on_Box_1D::_propagate_core(
 		double *qarr, size_t Nq, gsl_multiroot_function *p_eq_f) 
@@ -147,17 +161,9 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 		int status;
 
 
-//		gsl_vector *_fq_temp = gsl_vector_alloc(p_wf->Ndim);
-//		(*(p_eq_f->f))(s->x, p_eq_params, _fq_temp);
-//		std::cout << "fq_temp before iter: " << _fq_temp->data[0] 
-//		<< ", s->x: " << s->x->data[0] << std::endl;
-//		print_state(iq, xp, i, s);
-//		gsl_vector_free(_fq_temp);
-
 		for (; i<max_iter; ++i) {
 
 			status = gsl_multiroot_fsolver_iterate(s);
-//			print_state(iq, xp, i+1, s);
 			if (status) { break; }
 
 			status = gsl_multiroot_test_residual(s->f, residual_tol);
@@ -175,7 +181,6 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 				<< ", is0 = " << p_eq_params->is0 
 				<< ", x_tot_arr[is0] = " 
 				<< xmin + p_eq_params->dx_grid * p_eq_params->is0 << std::endl;
-
 
 #ifdef DEBUG
 
@@ -239,7 +244,6 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 			delete [] _debug_velo_arr;
 
 
-
 			(*(p_eq_f->f))(dqvec, p_eq_params, _fq_temp);
 			std::cout << "implicit_eq(0,...): " << _fq_temp->data[0] 
 				<< ", dqvec[0]: " << dqvec->data[0] << std::endl;
@@ -254,7 +258,6 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 			delete [] _impl_eq_dxp_arr_debug;
 
 #endif // DEBUG
-
 
 			return EXIT_FAILURE;
 		}
