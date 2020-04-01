@@ -36,9 +36,6 @@ int _implicit_eq(const gsl_vector *dqvec, void *params, gsl_vector *eq) {
 	// 
 	double qvec_next[Ndim];
 	qvec_next[0] = pp->qvec[0] + gsl_vector_get(dqvec, 0);
-//	for (size_t idim=0; idim<Ndim; ++idim)
-//	{ qvec_next[idim] = pp->qvec[idim] + gsl_vector_get(dqvec, idim);	}
-	
 
 	// Evaluate wf and grad_q_wf
 	// 
@@ -140,7 +137,7 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 		// Prepare `eq_params`: set member `qvec`
 		p_eq_params->qvec = qarr + iq; // i.e. &qarr[iq];  // [suspicious]
 		// Prepare `eq_params`: set member `is0`
-		if (EXIT_SUCCESS !=	eval_is0(xp+dxp_init,Nx_tot,dx,xmin,&p_eq_params->is0))  // [SUSPICOUS]
+		if (EXIT_SUCCESS !=	eval_is0(xp+dxp_init,Nx_tot,dx,xmin,&p_eq_params->is0))
 		{
 			std::cerr << "[ERROR] Failed to evaluate `is0`\n";
 			return EXIT_FAILURE;
@@ -150,18 +147,17 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 		int status;
 
 
-		gsl_vector *_fq_temp = gsl_vector_alloc(p_wf->Ndim);
-		(*(p_eq_f->f))(s->x, p_eq_params, _fq_temp);
-		std::cout << "fq_temp before iter: " << _fq_temp->data[0] << ", s->x: " << s->x->data[0] << std::endl;
-
-		print_state(iq, xp, i, s);
-
-		gsl_vector_free(_fq_temp);
+//		gsl_vector *_fq_temp = gsl_vector_alloc(p_wf->Ndim);
+//		(*(p_eq_f->f))(s->x, p_eq_params, _fq_temp);
+//		std::cout << "fq_temp before iter: " << _fq_temp->data[0] 
+//		<< ", s->x: " << s->x->data[0] << std::endl;
+//		print_state(iq, xp, i, s);
+//		gsl_vector_free(_fq_temp);
 
 		for (; i<max_iter; ++i) {
 
 			status = gsl_multiroot_fsolver_iterate(s);
-			print_state(iq, xp, i+1, s);
+//			print_state(iq, xp, i+1, s);
 			if (status) { break; }
 
 			status = gsl_multiroot_test_residual(s->f, residual_tol);
@@ -175,8 +171,13 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 			std::cerr << "[ERROR] The iteration failed with error: " 
 				<< gsl_strerror(status) << std::endl;
 			std::cerr << "[ERROR] .. at xp = " << xp 
-				<< ", particle index (`iq`) = " << iq << ", is0 = " << p_eq_params->is0 
-				<< ", x_tot_arr[is0] = " << xmin + p_eq_params->dx_grid * p_eq_params->is0 << std::endl;
+				<< ", particle index (`iq`) = " << iq 
+				<< ", is0 = " << p_eq_params->is0 
+				<< ", x_tot_arr[is0] = " 
+				<< xmin + p_eq_params->dx_grid * p_eq_params->is0 << std::endl;
+
+
+#ifdef DEBUG
 
 			double x_is0 = xmin + p_eq_params->dx_grid * p_eq_params->is0;
 			double x_is0_max = x_is0 + p_eq_params->dx_grid * (FD_STENCIL_NUM-1);
@@ -185,18 +186,17 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 			double *dxp_arr_debug = new double[N_dxp_debug];
 			for (size_t idxp=0; idxp<N_dxp_debug; ++idxp) { 
 				dxp_arr_debug[idxp] = (x_is0 + dx_dxp_debug * idxp) - xp;
-//				std::cout << dxp_arr_debug[idxp] << " ";
 			} std::cout << std::endl;
 			double *_impl_eq_dxp_arr_debug = new double[N_dxp_debug];
 
-			gsl_vector *_dxp_temp = gsl_vector_alloc(Bohm_Wavefunction_on_Box_1D::Ndim);
-			gsl_vector *_fq_temp = gsl_vector_alloc(Bohm_Wavefunction_on_Box_1D::Ndim);
+			const size_t Ndim = Bohm_Wavefunction_on_Box_1D::Ndim;
+			gsl_vector *_dxp_temp = gsl_vector_alloc(Ndim);
+			gsl_vector *_fq_temp = gsl_vector_alloc(Ndim);
 
 			for (size_t idxp=0; idxp<N_dxp_debug; ++idxp) {
 				gsl_vector_set(_dxp_temp, 0, dxp_arr_debug[idxp]);
 				(*(p_eq_f->f))(_dxp_temp, p_eq_params, _fq_temp);
 				_impl_eq_dxp_arr_debug[idxp] = gsl_vector_get(_fq_temp, 0);
-//				std::cerr << _impl_eq_dxp_arr_debug[idxp] << " ";
 			} std::cerr << "\n";
 
 
@@ -204,12 +204,14 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 			dxp_arr_file.write((char *) dxp_arr_debug, N_dxp_debug * sizeof(double));
 			dxp_arr_file.close();
 			std::ofstream impl_eq_dxp_arr_file("debug-impl-eq-dxp-arr.bin");
-			impl_eq_dxp_arr_file.write((char *) _impl_eq_dxp_arr_debug, N_dxp_debug * sizeof(double));
+			impl_eq_dxp_arr_file.write(
+					(char *) _impl_eq_dxp_arr_debug, N_dxp_debug * sizeof(double));
 			impl_eq_dxp_arr_file.close();
 
 
-			std::complex<double> _wf_q_temp, _grad_q_wf_temp[Bohm_Wavefunction_on_Box_1D::Ndim];
-			std::complex<double> *_wf_q_temp_arr = new std::complex<double>[N_dxp_debug];
+			std::complex<double> _wf_q_temp, _grad_q_wf_temp[Ndim];
+			std::complex<double> *_wf_q_temp_arr = 
+				new std::complex<double>[N_dxp_debug];
 
 			double *_debug_velo_arr = new double[N_dxp_debug];
 
@@ -217,34 +219,42 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 			for (size_t idxp=0; idxp<N_dxp_debug; ++idxp) {
 				_qvec_temp[0] = xp + dxp_arr_debug[idxp];
 				p_wf->wf_and_grad_q_wf(&_wf_q_temp, _grad_q_wf_temp, _qvec_temp, 
-						p_eq_params->wf_tot, p_eq_params->dx_grid, p_eq_params->xmin, p_eq_params->is0, true);
+						p_eq_params->wf_tot, p_eq_params->dx_grid, p_eq_params->xmin, 
+						p_eq_params->is0, true);
 				_wf_q_temp_arr[idxp] = _wf_q_temp;
-				_debug_velo_arr[idxp] = (p_eq_params->hbar / p_eq_params->mass) * std::imag(_grad_q_wf_temp[0] / _wf_q_temp);
+				_debug_velo_arr[idxp] = (p_eq_params->hbar / p_eq_params->mass) 
+					* std::imag(_grad_q_wf_temp[0] / _wf_q_temp);
 			}
 
 			std::ofstream wf_q_temp_arr_file("debug-wf-dxp-arr.bin");
-			wf_q_temp_arr_file.write((char *) _wf_q_temp_arr, N_dxp_debug * sizeof(std::complex<double>));
+			wf_q_temp_arr_file.write(
+					(char *) _wf_q_temp_arr, N_dxp_debug * sizeof(std::complex<double>));
 			wf_q_temp_arr_file.close();
 			delete [] _wf_q_temp_arr;
 
 			std::ofstream velo_temp_arr_file("debug-velocity-dxp-arr.bin");
-			velo_temp_arr_file.write((char *) _debug_velo_arr, N_dxp_debug * sizeof(double));
+			velo_temp_arr_file.write(
+					(char *) _debug_velo_arr, N_dxp_debug * sizeof(double));
 			velo_temp_arr_file.close();
 			delete [] _debug_velo_arr;
 
 
 
 			(*(p_eq_f->f))(dqvec, p_eq_params, _fq_temp);
-//			(*(p_eq_f->f))(xp+0., p_eq_params, 
-			std::cout << "implicit_eq(0,...): " << _fq_temp->data[0] << ", dqvec[0]: " << dqvec->data[0] << std::endl;
+			std::cout << "implicit_eq(0,...): " << _fq_temp->data[0] 
+				<< ", dqvec[0]: " << dqvec->data[0] << std::endl;
 			(*(p_eq_f->f))(s->x, p_eq_params, _fq_temp);
-			std::cout << "implicit_eq(s->x,...): " << _fq_temp->data[0] << ", s->x[0]: " << s->x->data[0] << std::endl;
+			std::cout << "implicit_eq(s->x,...): " << _fq_temp->data[0] 
+				<< ", s->x[0]: " << s->x->data[0] << std::endl;
 			std::cout << "s->f: " << s->f->data[0] << std::endl;
 
 			gsl_vector_free(_fq_temp);
 			gsl_vector_free(_dxp_temp);
 			delete [] dxp_arr_debug;
 			delete [] _impl_eq_dxp_arr_debug;
+
+#endif // DEBUG
+
 
 			return EXIT_FAILURE;
 		}
