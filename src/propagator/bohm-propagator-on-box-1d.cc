@@ -1,5 +1,6 @@
 #include "../../include/propagator/bohm-propagator-on-box-1d.h"
 #include "../../include/fd.h"
+#include "../../include/bohm-errno.h"
 
 #include <iostream>
 #include <complex>
@@ -70,15 +71,16 @@ int Bohm_Propagator_on_Box_1D::propagate(
 		std::complex<double> *wf_tot, double dt, 
 		int (*prop_wf)(std::complex<double> *wf, double dt, void *params),
 		void *prop_wf_params,
-		double *qarr, size_t Nq, double xmin) 
+		double *qarr, size_t Nq, double xmin, const int wf_only) 
 {
 	//// Propagate wavefunction
 	//
 	std::complex<double> *const wf = wf_tot + 1;
 	if (EXIT_SUCCESS != prop_wf(wf, dt, prop_wf_params)) {
 		std::cerr << "[ERROR] Failed to propagate wavefunction\n";
-		return EXIT_FAILURE;
+		return BOHM_ERRNO_WF_PROP_FAILED;
 	}
+	if (wf_only) { return EXIT_SUCCESS; }
 	
 	//// Propagate particles
 	//
@@ -90,7 +92,7 @@ int Bohm_Propagator_on_Box_1D::propagate(
 
 	if (EXIT_SUCCESS != _propagate_core(qarr, Nq, &eq_f)) {
 		std::cerr << "[ERROR] Failed to propagate particles\n"; 
-		return EXIT_FAILURE;
+		return BOHM_ERRNO_PARTICLE_PROP_FAILED;
 	}
 
 	//// Return 

@@ -35,7 +35,7 @@ public:
 	int propagate(std::complex<double> *wf_tot, double dt, 
 			int (*prop_wf)(std::complex<double> *wf, double dt, void *params), 
 			void *prop_wf_params,
-			double *qarr, size_t Nq, double xmin); 
+			double *qarr, size_t Nq, double xmin, const int wf_only=0); 
 
 protected:
 	int _propagate_core(

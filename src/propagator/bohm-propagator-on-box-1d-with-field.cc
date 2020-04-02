@@ -48,7 +48,7 @@ int Bohm_Propagator_on_Box_1D_with_field::propagate_with_field(
 		int (*prop_wf_with_field)(
 			std::complex<double> *wf, double dt, void *params),
 		void *prop_wf_with_field_params, double *qarr, size_t Nq, double xmin, 
-		double t, double (*p_A_func)(double t)) {
+		double t, double (*p_A_func)(double t), const int wf_only) {
 
 	//// Propagate wavefunction
 	//
@@ -57,9 +57,12 @@ int Bohm_Propagator_on_Box_1D_with_field::propagate_with_field(
 		return BOHM_ERRNO_WF_PROP_FAILED;
 	}
 	
+	if (wf_only) { return EXIT_SUCCESS; }
+	
 	//// Propagate particles
 	//
-	// [NOTE] the first NULL and 0 should be replaced by appropriate one
+	// [NOTE] the first NULL and 0 should be replaced by an appropriate one 
+	// for each step of the propagation
 	const double At_next = (*p_A_func)(t+dt);
 	struct _implicit_eq_with_field_params eq_params =
 	{ NULL, wf_tot, p_wf->get_dx(), xmin, dt, hbar, mass, charge, At_next, 0 };

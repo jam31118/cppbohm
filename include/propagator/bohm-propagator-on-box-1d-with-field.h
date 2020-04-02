@@ -18,7 +18,7 @@ public:
 			int (*prop_wf_with_field)(
 				std::complex<double> *wf, double dt, void *params),
 			void *prop_wf_with_field_params, double *qarr, size_t Nq, double xmin, 
-			double t, double (*p_A_func)(double t));
+			double t, double (*p_A_func)(double t), int wf_only=0);
 };
 
 
