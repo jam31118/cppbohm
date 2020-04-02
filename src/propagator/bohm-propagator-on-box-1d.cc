@@ -6,16 +6,6 @@
 #include <fstream>
 
 
-struct _implicit_eq_params {
-	double *qvec;
-	std::complex<double> *wf_tot;
-	double dx_grid;
-	double xmin;
-	double dt;
-	double hbar, mass;
-	size_t is0;
-};
-
 
 /**
  * Evaluate the value of implicit equation for the backward Euler method

@@ -13,14 +13,17 @@
 
 // From this library (BOHM)
 //
-#include "../../include/wf/bohm-wavefunction-on-box-1d.h"
+#include "../wf/bohm-wavefunction-on-box-1d.h"
 
 
 class Bohm_Propagator_on_Box_1D {
 
-	Bohm_Wavefunction_on_Box_1D *p_wf;
-	double hbar, mass;
 	gsl_multiroot_fsolver *s;
+
+protected:
+
+	double hbar, mass;
+	Bohm_Wavefunction_on_Box_1D *p_wf;
 
 public:
 
@@ -34,8 +37,29 @@ public:
 			void *prop_wf_params,
 			double *qarr, size_t Nq, double xmin); 
 
+protected:
 	int _propagate_core(
 			double *qarr, size_t Nq, gsl_multiroot_function *p_eq_f);
 };
+
+
+
+struct _implicit_eq_params {
+	double *qvec;
+	std::complex<double> *wf_tot;
+	double dx_grid;
+	double xmin;
+	double dt;
+	double hbar, mass;
+	size_t is0;
+	_implicit_eq_params(
+			double *qvec, std::complex<double> *wf_tot, double dx_grid, 
+			double xmin, double dt, double hbar, double mass, size_t is0)
+		: qvec(qvec), wf_tot(wf_tot), dx_grid(dx_grid), 
+		xmin(xmin), dt(dt), hbar(hbar), mass(mass), is0(is0) {}
+};
+
+
+
 
 #endif // _BOHM_PROPAGATOR_ON_BOX_1D_H_

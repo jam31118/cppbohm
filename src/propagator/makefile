@@ -4,10 +4,15 @@ LIB_FILE = libpropagator.a
 
 all: $(LIB_FILE)
 
-$(LIB_FILE): bohm-propagator-on-box-1d.o
+$(LIB_FILE): bohm-propagator-on-box-1d.o bohm-propagator-on-box-1d-with-field.o
 	$(AR) rcs -o $@ $^
 
 bohm-propagator-on-box-1d.o: bohm-propagator-on-box-1d.cc
+	$(CXX) -o $@ $< -c -fPIC $(OPT_FLAGS) $(WARN_FLAGS) \
+		$(TDSE_INC_FLAGS) \
+		$(GSL_INC_FLAGS)
+
+bohm-propagator-on-box-1d-with-field.o: bohm-propagator-on-box-1d-with-field.cc
 	$(CXX) -o $@ $< -c -fPIC $(OPT_FLAGS) $(WARN_FLAGS) \
 		$(TDSE_INC_FLAGS) \
 		$(GSL_INC_FLAGS)
