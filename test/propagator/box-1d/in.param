@@ -7,4 +7,4 @@ dt double 0.1
 Nq int 9
 xmin double 0
 
-wf-t0-file string wf-t0.bin
+#wf-t0-file string wf-t0.bin

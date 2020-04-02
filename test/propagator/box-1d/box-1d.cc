@@ -23,6 +23,47 @@
 #include "../../../include/propagator/bohm-propagator-on-box-1d.h"
 #include "../../../include/fd.h"
 
+// For propagation with electromanetic field
+#ifdef FIELD
+#include "../../../include/propagator/bohm-propagator-on-box-1d-with-field.h"
+#include "propagator/propagator-on-box-1d-under-field.h"
+
+
+double A_func(double) { return 0.; }
+
+//double A_func(double t) {
+//	double A0 = 0.029638422288250095, w = 0.05695419063519442, nc = 2;
+//	double ww = w / (2.*nc);
+//	double duration = M_PI/ww;
+//	double start_time = 0.0;
+//	double end_time = start_time + duration;
+//	if (t > end_time) { return 0.; }
+//	else { return A0 * sin(ww*t) * sin(w*t); }
+//}
+
+#endif // FIELD
+
+
+
+
+
+/**
+ * Define propagation function
+ */
+#ifdef FIELD
+
+struct wf_prop_with_field_params {
+	Propagator_on_Box_1D_under_field *p_wf_propagator;
+	double t;
+};
+
+int prop_wf_under_field(std::complex<double> *wf, double dt, void *params) {
+	struct wf_prop_with_field_params *pparams = 
+		(struct wf_prop_with_field_params *) params;
+	return pparams->p_wf_propagator->propagate_under_field(wf, dt, pparams->t);
+}
+
+#else // FIELD
 
 struct wf_prop_params {
 	Propagator_on_Box_1D *p_wf_propagator;
@@ -32,7 +73,7 @@ int prop_wf(std::complex<double> *wf, double dt, void *params) {
 	struct wf_prop_params *pparams = (wf_prop_params *) params;
 	return pparams->p_wf_propagator->propagate(wf, dt, 1);
 }
-
+#endif // FIELD
 
 
 
@@ -70,9 +111,20 @@ int main() {
 
 	// Construct propagator
 	//
+#ifdef FIELD
+	const double hbar=1., mass=1., charge=-1.; // for electron
+	Bohm_Propagator_on_Box_1D_with_field prop(Nx, dx, hbar, mass, charge);	
+	Propagator_on_Box_1D_under_field wf_propagator(
+			Nx, dx, Vx, &A_func, hbar, mass, charge);
+	struct wf_prop_with_field_params pparams_with_field = { &wf_propagator, 0. };
+	  // the `0.` is dummy value for time; it should be set during propagation
+// 	pparams_with_field.p_wf_propagator = &wf_propagator;
+	std::cout << "[ LOG ] Propagator with field has been initalized\n";
+#else // FIELD
 	Bohm_Propagator_on_Box_1D prop(Nx, dx);  // for particles
 	Propagator_on_Box_1D wf_propagator(Nx, dx, Vx);  // for wavefuntion
 	struct wf_prop_params pparams = { &wf_propagator };
+#endif // FIELD
 
 
 	// Prepare initial state
@@ -131,31 +183,58 @@ int main() {
 	std::cout << std::endl;
 
 
-	// Prepare storage for propagation
-	// 
+	//// Prepare storage for propagation
+	//
+	// of wavefunction:
 	std::complex<double> *wf_t_1d = new std::complex<double>[Nt*Nx_tot];
 	std::complex<double> **wf_t = new std::complex<double>*[Nt];
 	set_2d_view_of_1d(wf_t, wf_t_1d, Nt, Nx_tot);
-
+	// of particles coordinates
 	double *qarr_t_1d = new double[Nt*Nq];
 	double **qarr_t = new double*[Nt];
 	set_2d_view_of_1d(qarr_t, qarr_t_1d, Nt, Nq);
-	
+	// of time array
+	double *t_arr = new double[Nt];
+	// of vector potential A(t)
+	double *vecpot_t_arr = new double[Nt];
 
-	
-	// Propagete
+
+	//// Initialize propagation procedures
 	//
+	// Set time
+	const double t0 = 0.;  // may be set by parameter given from external file
+	double t = t0;
+	// Store initial data to storage array
 	std::copy(wf_tot, wf_tot_max, wf_t[0]);
 	std::copy(qarr, qarr_max, qarr_t[0]);
+	t_arr[0] = t;
+#ifdef FIELD
+	vecpot_t_arr[0] = A_func(t);
+#endif // FIELD
+
+
+	//// Propagete
+	//
 	int stat;
 	for (size_t it=1; it<Nt; ++it) {
+#ifdef FIELD
+		stat = prop.propagate_with_field(
+				wf_tot, dt, &prop_wf_under_field, &pparams_with_field, 
+				qarr, Nq, xmin, t, &A_func);
+#else // FIELD
 		stat = prop.propagate(wf_tot, dt, &prop_wf, &pparams, qarr, Nq, xmin);
+#endif // FIELD
 		if (stat != EXIT_SUCCESS) {
 			std::cerr << "[ERROR] Failed to propagate with particles\n";
 			return EXIT_FAILURE;
 		}
+		t += dt;
 		std::copy(wf_tot, wf_tot_max, wf_t[it]);
 		std::copy(qarr, qarr_max, qarr_t[it]);
+		t_arr[it] = t;
+#ifdef FIELD
+		vecpot_t_arr[it] = A_func(t);
+#endif // FIELD
 	}
 	
 
@@ -173,6 +252,13 @@ int main() {
 	qarr_t_file.write((char *) qarr_t_1d, Nt*Nq*sizeof(double));
 	qarr_t_file.close();
 
+	std::ofstream t_arr_file("t_arr.bin", std::ios::binary);
+	t_arr_file.write((char *) t_arr, Nt*sizeof(double));
+	t_arr_file.close();
+	
+	std::ofstream vecpot_t_arr_file("vecpot_t.bin", std::ios::binary);
+	vecpot_t_arr_file.write((char *) vecpot_t_arr, Nt*sizeof(double));
+	vecpot_t_arr_file.close();
 
 
 	// Free memory and return
@@ -187,6 +273,9 @@ int main() {
 
 	delete [] qarr_t;
 	delete [] qarr_t_1d;
+
+	delete [] t_arr;
+	delete [] vecpot_t_arr;
 
 	return EXIT_SUCCESS;
 }
