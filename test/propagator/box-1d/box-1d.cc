@@ -29,17 +29,17 @@
 #include "propagator/propagator-on-box-1d-under-field.h"
 
 
-double A_func(double) { return 0.; }
+//double A_func(double) { return 0.; }
 
-//double A_func(double t) {
-//	double A0 = 0.029638422288250095, w = 0.05695419063519442, nc = 2;
-//	double ww = w / (2.*nc);
-//	double duration = M_PI/ww;
-//	double start_time = 0.0;
-//	double end_time = start_time + duration;
-//	if (t > end_time) { return 0.; }
-//	else { return A0 * sin(ww*t) * sin(w*t); }
-//}
+double A_func(double t) {
+	double A0 = 0.029638422288250095, w = 0.05695419063519442, nc = 2;
+	double ww = w / (2.*nc);
+	double duration = M_PI/ww;
+	double start_time = 0.0;
+	double end_time = start_time + duration;
+	if (t > end_time) { return 0.; }
+	else { return A0 * sin(ww*t) * sin(w*t); }
+}
 
 #endif // FIELD
 
@@ -99,6 +99,7 @@ int main() {
 	const double dt = param.get_double("dt");
 	const size_t Nq = param.get_int("Nq");  // number of particles
 	const size_t Nt = param.get_int("Nt");
+	const int wf_only = param.get_int("propagate-wf-only");
 
 	const size_t Nx_tot = 1 + Nx + 1;
 
@@ -218,11 +219,13 @@ int main() {
 	int stat;
 	for (size_t it=1; it<Nt; ++it) {
 #ifdef FIELD
+		pparams_with_field.t = t;
 		stat = prop.propagate_with_field(
 				wf_tot, dt, &prop_wf_under_field, &pparams_with_field, 
-				qarr, Nq, xmin, t, &A_func);
+				qarr, Nq, xmin, t, &A_func, wf_only);
 #else // FIELD
-		stat = prop.propagate(wf_tot, dt, &prop_wf, &pparams, qarr, Nq, xmin);
+		stat = prop.propagate(
+				wf_tot, dt, &prop_wf, &pparams, qarr, Nq, xmin, wf_only);
 #endif // FIELD
 		if (stat != EXIT_SUCCESS) {
 			std::cerr << "[ERROR] Failed to propagate with particles\n";

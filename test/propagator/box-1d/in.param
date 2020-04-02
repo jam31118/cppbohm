@@ -1,10 +1,13 @@
-Nx int 41
-dx double 0.2
+Nx int 321
+dx double 0.1
 
-Nt int 301
-dt double 0.1
+Nt int 51
+dt double 0.05
 
 Nq int 9
 xmin double 0
 
-#wf-t0-file string wf-t0.bin
+wf-t0-file string wf-t0.bin
+
+propagate-wf-only int 0
+
