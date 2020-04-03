@@ -224,20 +224,25 @@ int main() {
 
 	//// Propagete
 	//
-	int stat;
-	for (size_t it=1; it<Nt; ++it) {
+	int stat; size_t it;
+	for (it=1; it<Nt; ++it) {
 #ifdef FIELD
 		pparams_with_field.t = t;
 		stat = prop.propagate_with_field(
 				wf_tot, dt, &prop_wf_under_field, &pparams_with_field, 
 				qarr, Nq, xmin, t, &A_func, wf_only);
 #else // FIELD
+//		stat = prop.propagate_with_stepsize_control(
+//				wf_tot, dt, &prop_wf, &pparams, qarr, Nq, xmin);
 		stat = prop.propagate(
 				wf_tot, dt, &prop_wf, &pparams, qarr, Nq, xmin, wf_only);
 #endif // FIELD
 		if (stat != EXIT_SUCCESS) {
-			std::cerr << "[ERROR] Failed to propagate with particles\n";
-			return EXIT_FAILURE;
+			std::cerr << "[ERROR] Failed to propagate with particles\n" 
+				<< "[ERROR] .. at time t = " << t << " to t = " << t + dt << std::endl
+				<< "[ERROR] .. at time index = " << it << std::endl;
+			break;  // exit iteration and proceed to saving calculated data so far.
+//			return EXIT_FAILURE;
 		}
 		t += dt;
 		std::copy(wf_tot, wf_tot_max, wf_t[it]);
@@ -247,6 +252,7 @@ int main() {
 		vecpot_t_arr[it] = A_func(t);
 #endif // FIELD
 	}
+	const size_t Nt_done = it;
 	
 
 	// Store data to files
@@ -256,19 +262,19 @@ int main() {
 	wf_file.close();
 
 	std::ofstream wf_t_file("wf_t.bin", std::ios::binary);
-	wf_t_file.write((char *) wf_t_1d, Nt*Nx_tot*sizeof(std::complex<double>));
+	wf_t_file.write((char *) wf_t_1d, Nt_done*Nx_tot*sizeof(std::complex<double>));
 	wf_t_file.close();
 
 	std::ofstream qarr_t_file("qarr_t.bin", std::ios::binary);
-	qarr_t_file.write((char *) qarr_t_1d, Nt*Nq*sizeof(double));
+	qarr_t_file.write((char *) qarr_t_1d, Nt_done*Nq*sizeof(double));
 	qarr_t_file.close();
 
 	std::ofstream t_arr_file("t_arr.bin", std::ios::binary);
-	t_arr_file.write((char *) t_arr, Nt*sizeof(double));
+	t_arr_file.write((char *) t_arr, Nt_done*sizeof(double));
 	t_arr_file.close();
 	
 	std::ofstream vecpot_t_arr_file("vecpot_t.bin", std::ios::binary);
-	vecpot_t_arr_file.write((char *) vecpot_t_arr, Nt*sizeof(double));
+	vecpot_t_arr_file.write((char *) vecpot_t_arr, Nt_done*sizeof(double));
 	vecpot_t_arr_file.close();
 
 

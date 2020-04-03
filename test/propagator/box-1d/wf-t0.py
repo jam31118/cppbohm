@@ -15,14 +15,14 @@ wf_E1 = sin(pi/L*(xarr-xmin)).astype(np.complex)
 wf_E2 = sin(2*pi/L*(xarr-xmin)).astype(np.complex)
 wf_E3 = sin(3*pi/L*(xarr-xmin)).astype(np.complex)
 wf_E10 = sin(10*pi/L*(xarr-xmin)).astype(np.complex)
-#wf_t0 = 1.0 * wf_E1 + 0.1 * wf_E2 - 0.3 * wf_E3 + 0.0 * wf_E10
+#wf_t0 = 1.0 * wf_E1 + 0.3 * wf_E2 - 0.5 * wf_E3 + 0.3j * wf_E10
 
 # Gaussian wave packet
 xmin, xmax = xarr[[0,-1]]
 xmid = 0.5 * (xmin + xmax) + 0.3 * (xmax-xmin)
-kx = 0.5
+kx = 0.2
 wf_t0 = exp(-(xarr-xmid)**2).astype(np.complex)
-wf_t0 *= exp(1.j*kx*xarr)
+#wf_t0 *= exp(1.j*kx*xarr)
 
 
 wf_t0[[0,-1]] = 0.

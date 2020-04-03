@@ -25,7 +25,7 @@ def Settings( **kwargs ):
         '-I', GSLINC,
         '-I', TDSEINC,
         '-I', PARAMINC,
-        '-DFIELD',
+#        '-DFIELD',
         ],
   }
 
