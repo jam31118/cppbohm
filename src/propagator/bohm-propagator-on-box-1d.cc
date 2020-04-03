@@ -137,7 +137,7 @@ int Bohm_Propagator_on_Box_1D::_propagate_core(
 		double xp = qarr[iq];
 		if ((xp<xmin) || (xp>=xmax)) { 
 			std::cout << "[ LOG ] particles out of bound: [" 
-				<< xmin << "," << xmax << "]"; 
+				<< xmin << "," << xmax << "]\n"; 
 			continue; 
 		}
 		// Prepare `eq_params`: set member `qvec`
