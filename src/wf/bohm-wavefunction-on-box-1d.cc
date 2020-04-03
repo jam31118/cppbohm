@@ -41,3 +41,25 @@ int Bohm_Wavefunction_on_Box_1D::wf_and_grad_q_wf(
 }
 
 
+
+int Bohm_Wavefunction_on_Box_1D::sample_by_stdev(
+		std::complex<double> *wf, size_t Nx, double dx, double xmin, 
+		double *x_samples, size_t N_sample) {
+	double mean_x, stdev_x;
+	int status = Wavefunction_on_Box_1D::mean_and_stdev_x(
+			wf, Nx, dx, xmin, &mean_x, &stdev_x);
+	if (status != EXIT_SUCCESS) { return status; }
+	if (stdev_x <= 0) { return EXIT_FAILURE; }
+	if (N_sample <= 0) { return EXIT_FAILURE; }
+	if (N_sample == 1) { x_samples[0] = mean_x; }
+	if (N_sample > 1) {
+		double sample_spacing = (2.*stdev_x) / (N_sample - 1);
+		double x_sample_min = mean_x - stdev_x;
+		for (double xs=x_sample_min, *ps=x_samples, *psmax=x_samples+N_sample;
+				ps < psmax; ++ps, xs += sample_spacing)
+		{ *ps = xs; }
+	}
+	return EXIT_SUCCESS;
+}
+
+
