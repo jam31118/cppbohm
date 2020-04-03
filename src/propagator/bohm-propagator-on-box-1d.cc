@@ -67,6 +67,120 @@ Bohm_Propagator_on_Box_1D::~Bohm_Propagator_on_Box_1D() {
 
 
 
+
+
+int Bohm_Propagator_on_Box_1D::propagate_with_stepsize_control(
+		std::complex<double> *wf_tot, double dt, 
+		int (*prop_wf)(std::complex<double> *wf, double dt, void *params),
+		void *prop_wf_params,
+		double *qarr, size_t Nq, double xmin) 
+{
+	
+	const size_t MAX_SUBSTEP_COUNT = 20;
+	const size_t MAX_ITER_COUNT = 100;
+	const double PADDING_RATIO = 1.2;
+	const double TIMESTEP_REDUCTION_RATIO = 0.8;
+	const double MIN_TIMESTEP = 1e-8;
+
+	const size_t Ndim = Bohm_Wavefunction_on_Box_1D::Ndim;
+	const size_t Nx_tot = p_wf->get_Nx_tot();
+	const double dx_grid = p_wf->get_dx();
+
+	double sub_time = 0.;
+	size_t i_substep;
+	int stat;
+	double dt_min_xp;
+	for (i_substep = 0; i_substep < MAX_SUBSTEP_COUNT; ++i_substep) {
+		double dt_upper_limit = dt - sub_time;
+		dt_min_xp = dt_upper_limit;
+		for (size_t iq = 0; iq < Nq; ++iq) {
+
+			double xp = qarr[0];
+
+			//// Evaluate wf and particle derivatives at q, thus, velocity
+			//
+			std::complex<double> wf_q, grad_q_wf[Ndim];
+			double qvec[Ndim]; qvec[0] = xp;
+			size_t is0;
+			if (EXIT_SUCCESS != eval_is0(xp, Nx_tot, dx_grid, xmin, &is0))
+			{ return BOHM_ERRNO_INTERP_FAILED; }
+			stat = Bohm_Wavefunction_on_Box_1D::wf_and_grad_q_wf(
+					&wf_q, grad_q_wf, qvec, wf_tot, dx_grid, xmin, is0, true); 
+			if (stat != EXIT_SUCCESS) { return BOHM_ERRNO_INTERP_FAILED; }
+			const double v = (hbar / mass) * std::imag( grad_q_wf[0] / wf_q );
+			
+			//// Attenuate timestep
+			// if current timestep seems to locate the next particle position 
+			// to out of continous region interporated by finite difference method
+			double fd_xmin = xmin + is0 * dx_grid;
+			double fd_xmax = xmin +(is0+FD_STENCIL_NUM-1) * dx_grid;
+			size_t ic;
+			for (ic = 0; ic < MAX_ITER_COUNT; ++ic) {
+				// An explicit euler method with extended dt by PADDING_RATIO
+				double xp_next = xp + PADDING_RATIO * dt_min_xp * v;
+			 	if ((fd_xmin<xp_next) || (xp_next<fd_xmax)) { break; }
+				else { dt_min_xp *= TIMESTEP_REDUCTION_RATIO; }
+			}
+			if (ic >= MAX_ITER_COUNT)	{ 
+				std::cerr << "[ERROR] The maximum iteration counts has been reached\n";
+				return EXIT_FAILURE;
+			}
+		}
+		if (dt_min_xp < MIN_TIMESTEP) { 
+			std::cerr << "[ERROR] The minimum timestep has been reached\n";
+			return EXIT_FAILURE; 
+		}
+		
+		
+  	//// Propagate wavefunction
+  	//
+  	std::complex<double> *const wf = wf_tot + 1;
+  	if (EXIT_SUCCESS != prop_wf(wf, dt_min_xp, prop_wf_params)) {
+  		std::cerr << "[ERROR] Failed to propagate wavefunction\n";
+  		return BOHM_ERRNO_WF_PROP_FAILED;
+  	}
+  
+  
+  	//// Propagate particles
+  	//
+  	// [NOTE] the first NULL and the last 0 should be replaced by appropriate one
+  	struct _implicit_eq_params eq_params =
+  	{ NULL, wf_tot, p_wf->get_dx(), xmin, dt, hbar, mass, 0 };
+  	
+  	gsl_multiroot_function eq_f = {&_implicit_eq, p_wf->Ndim, &eq_params};
+  
+  	if (EXIT_SUCCESS != _propagate_core(qarr, Nq, &eq_f)) {
+  		std::cerr << "[ERROR] Failed to propagate particles\n"; 
+  		return BOHM_ERRNO_PARTICLE_PROP_FAILED;
+  	}
+		
+		if (dt_min_xp < dt_upper_limit) {
+			std::cout << "[ LOG ] Sub timestep stepped\n";
+			sub_time += dt_min_xp;
+		} else if (dt_min_xp == dt_upper_limit) {
+			sub_time += dt_upper_limit;
+			break;
+		} else {
+			std::cout << "[ERROR] Unexpected: probably `dt_min_xp>dt_upper_limit`\n";
+			return EXIT_FAILURE;
+		}
+	}
+	
+	if (i_substep >= MAX_SUBSTEP_COUNT) {
+		std::cerr << "[ERROR] Failed to propagate a timestep: MAX_SUBSTEP_COUNT reached\n";
+		return EXIT_FAILURE;
+	}
+	
+
+
+
+	return EXIT_SUCCESS;
+}
+
+
+
+
+
 int Bohm_Propagator_on_Box_1D::propagate(
 		std::complex<double> *wf_tot, double dt, 
 		int (*prop_wf)(std::complex<double> *wf, double dt, void *params),

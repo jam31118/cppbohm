@@ -37,6 +37,12 @@ public:
 			void *prop_wf_params,
 			double *qarr, size_t Nq, double xmin, const int wf_only=0); 
 
+	int propagate_with_stepsize_control(
+			std::complex<double> *wf_tot, double dt, 
+			int (*prop_wf)(std::complex<double> *wf, double dt, void *params),
+			void *prop_wf_params,
+			double *qarr, size_t Nq, double xmin); 
+
 protected:
 	int _propagate_core(
 			double *qarr, size_t Nq, gsl_multiroot_function *p_eq_f);
