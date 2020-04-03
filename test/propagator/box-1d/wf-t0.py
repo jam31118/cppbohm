@@ -19,7 +19,7 @@ wf_E10 = sin(10*pi/L*(xarr-xmin)).astype(np.complex)
 
 # Gaussian wave packet
 xmin, xmax = xarr[[0,-1]]
-xmid = 0.5 * (xmin + xmax)
+xmid = 0.5 * (xmin + xmax) + 0.3 * (xmax-xmin)
 kx = 0.5
 wf_t0 = exp(-(xarr-xmid)**2).astype(np.complex)
 wf_t0 *= exp(1.j*kx*xarr)

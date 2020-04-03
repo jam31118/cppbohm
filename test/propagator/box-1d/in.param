@@ -1,10 +1,10 @@
 Nx int 161
 dx double 0.2
 
-Nt int 151
-dt double 0.05
+Nt int 1101
+dt double 0.0125
 
-Nq int 9
+Nq int 51
 xmin double 0
 
 wf-t0-file string wf-t0.bin
