@@ -1,7 +1,7 @@
-Nx int 321
-dx double 0.1
+Nx int 161
+dx double 0.2
 
-Nt int 51
+Nt int 151
 dt double 0.05
 
 Nq int 9

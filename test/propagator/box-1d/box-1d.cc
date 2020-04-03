@@ -22,6 +22,7 @@
 //
 #include "../../../include/propagator/bohm-propagator-on-box-1d.h"
 #include "../../../include/fd.h"
+#include "../../../include/wf/bohm-wavefunction-on-box-1d.h"
 
 // For propagation with electromanetic field
 #ifdef FIELD
@@ -166,16 +167,23 @@ int main() {
 			std::cerr << "[ERROR] Failed to propagator to ground state\n";
 			return EXIT_FAILURE;
 		}
-
 	}
 
-	// Set particle coordinates 
+
+	//// Set particle coordinates at initial time
 	// 
 	double *const qarr = new double[Nq];
 	double *const qarr_max = qarr + Nq;
-	for (size_t i=0; i<Nq; ++i) 
-	{ qarr[i] = (i+1) * (Nx_tot/2-1)*dx / (Nq-1+2) + (Nx_tot/4) * dx; }
-
+//	for (size_t i=0; i<Nq; ++i) 
+//	{ qarr[i] = (i+1) * (Nx_tot/2-1)*dx / (Nq-1+2) + (Nx_tot/4) * dx; }
+	// Get samples from the initial wavefunction
+	int status = Bohm_Wavefunction_on_Box_1D::sample_by_stdev(
+			wf, Nx, dx, xmin, qarr, Nq);
+	if (status != EXIT_SUCCESS) {
+		std::cerr << "[ERROR] Failed to get samples from initial state\n";
+		return EXIT_FAILURE;
+	}
+	
 
 	// Print particle coordinates
 	//
